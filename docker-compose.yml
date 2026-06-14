@@ -1,0 +1,93 @@
+# Local development stack for Folio
+# Starts: etcd, MinIO (S3-compatible segment offload), folio-node
+# Usage: make up
+#
+# Ports exposed:
+#   etcd      :2379
+#   folio-node gRPC :9090  metrics :9092
+#   MinIO API :9000  console :9001
+
+services:
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.13
+    restart: unless-stopped
+    ports:
+      - "2379:2379"
+    environment:
+      ALLOW_NONE_AUTHENTICATION: "yes"
+      ETCD_NAME: default
+      ETCD_ADVERTISE_CLIENT_URLS: http://etcd:2379
+      ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://etcd:2380
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+      ETCD_INITIAL_CLUSTER: default=http://etcd:2380
+      ETCD_DATA_DIR: /data/etcd
+    volumes:
+      - etcd-data:/data/etcd
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address :9001
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: "no"
+    entrypoint: >
+      sh -c "mc alias set local http://minio:9000 minioadmin minioadmin &&
+             mc mb --ignore-existing local/folio-segments"
+
+  folio-node:
+    image: folio/node:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: folio-node
+    security_opt:
+      - seccomp:unconfined
+    restart: unless-stopped
+    depends_on:
+      etcd:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+    ports:
+      - "9090:9090"
+      - "9092:9092"
+    environment:
+      NODE_ID: local-node-0
+      NODE_ADDRESS: http://127.0.0.1:9090
+      LISTEN_ADDR: 0.0.0.0:9090
+      DATA_DIR: /data/folio
+      ETCD_ENDPOINTS: http://etcd:2379
+      SEGMENT_SEAL_THRESHOLD_MB: "128"
+      CACHE_MAX_BYTES: "536870912"
+      S3_BUCKET: folio-segments
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      RUST_LOG: "info,folio_node=debug"
+    volumes:
+      - folio-data:/data/folio
+
+volumes:
+  etcd-data:
+  minio-data:
+  folio-data:

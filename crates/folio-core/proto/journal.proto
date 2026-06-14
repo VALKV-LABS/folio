@@ -1,0 +1,94 @@
+﻿syntax = "proto3";
+
+package journal;
+
+// JournalService is the data-plane RPC interface for a storage node.
+// All methods are used by FolioClient; AddEntry and FenceLedger are also
+// used by the recovery Worker. The proto types are transport-only — the
+// canonical domain types live in src/protocol.rs.
+service JournalService {
+    rpc AddEntry(AddEntryRequest)         returns (AddEntryResponse);
+    rpc ReadEntry(ReadEntryRequest)       returns (ReadEntryResponse);
+    rpc FenceLedger(FenceLedgerRequest)   returns (FenceLedgerResponse);
+    rpc GetLac(GetLacRequest)             returns (GetLacResponse);
+    rpc GetNodeStatus(GetNodeStatusRequest) returns (GetNodeStatusResponse);
+}
+
+// ---- shared sub-message ----
+
+message ProtoEntry {
+    uint64  ledger_id  = 1;
+    uint64  entry_id   = 2;
+    uint64  lac        = 3;
+    fixed32 digest     = 4;  // crc32fast of data; always present
+    bytes   data       = 5;
+    bytes   master_key = 6;  // 32 bytes; non-empty on first write to register HMAC key on bookie
+    bytes   hmac       = 7;  // HMAC-SHA256(master_key, ledger_id||entry_id||lac||data); empty = CRC32-only mode
+}
+
+// ---- AddEntry ----
+
+message AddEntryRequest {
+    ProtoEntry entry = 1;
+}
+
+message AddEntryResponse {
+    uint64 ledger_id  = 1;
+    uint64 entry_id   = 2;
+    uint64 local_lac  = 3;
+    string node_id    = 4;
+}
+
+// ---- ReadEntry ----
+
+message ReadEntryRequest {
+    uint64 ledger_id = 1;
+    uint64 entry_id  = 2;
+}
+
+message ReadEntryResponse {
+    ProtoEntry entry          = 1;
+    string     node_id        = 2;
+    // Server-assigned wall-clock timestamp (ms since epoch) when the entry
+    // was appended.  Used by the Reaper for TTL-based compaction.
+    uint64     appended_at_ms = 3;
+}
+
+// ---- FenceLedger ----
+
+message FenceLedgerRequest {
+    uint64 ledger_id = 1;
+}
+
+message FenceLedgerResponse {
+    uint64 lac = 1;  // highest LAC observed before fencing
+}
+
+// ---- GetLac ----
+
+message GetLacRequest {
+    uint64 ledger_id       = 1;
+    uint64 wait_timeout_ms = 2;  // 0 = return immediately
+}
+
+message GetLacResponse {
+    uint64 lac = 1;
+}
+
+// ---- GetNodeStatus ----
+
+message GetNodeStatusRequest {}
+
+message GetNodeStatusResponse {
+    string    node_id           = 1;
+    NodeState state             = 2;
+    uint64    last_heartbeat_ms = 3;
+}
+
+enum NodeState {
+    NODE_STATE_UNSPECIFIED  = 0;
+    NODE_STATE_READ_WRITE   = 1;
+    NODE_STATE_READ_ONLY    = 2;
+    NODE_STATE_RECOVERING   = 3;
+    NODE_STATE_UNAVAILABLE  = 4;
+}

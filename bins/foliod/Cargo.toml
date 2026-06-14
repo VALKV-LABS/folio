@@ -1,0 +1,26 @@
+[package]
+name = "foliod"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Folio journal storage node daemon"
+
+[[bin]]
+name = "folio-node"
+path = "src/main.rs"
+
+[dependencies]
+folio-core.workspace = true
+folio-node.workspace = true
+folio-ledger.workspace = true
+fjall.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+etcd-client.workspace = true
+parking_lot.workspace = true
+tonic.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+aws-config.workspace = true
+aws-sdk-s3.workspace = true

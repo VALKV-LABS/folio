@@ -1,0 +1,98 @@
+﻿syntax = "proto3";
+
+package folio.table.v1;
+
+// TableService is the data-plane RPC interface for a Range Server.
+// A Range Server owns one or more key ranges within a table and handles all
+// reads and writes for those ranges as the single-writer leader.
+service TableService {
+    rpc Get(GetRequest)             returns (GetResponse);
+    rpc Put(PutRequest)             returns (PutResponse);
+    rpc Delete(DeleteRequest)       returns (DeleteResponse);
+    rpc Increment(IncrementRequest) returns (IncrementResponse);
+    rpc CompareAndSwap(CASRequest)  returns (CASResponse);
+    rpc RangeScan(ScanRequest)      returns (stream ScanResponse);
+}
+
+// ---- Get ----
+
+message GetRequest {
+    bytes table_id = 1;
+    bytes key      = 2;
+}
+
+message GetResponse {
+    bytes value   = 1;
+    int64 version = 2;
+    bool  found   = 3;
+}
+
+// ---- Put ----
+
+message PutRequest {
+    bytes table_id = 1;
+    bytes key      = 2;
+    bytes value    = 3;
+}
+
+message PutResponse {
+    int64 version = 1;
+}
+
+// ---- Delete ----
+
+message DeleteRequest {
+    bytes table_id = 1;
+    bytes key      = 2;
+}
+
+message DeleteResponse {
+    int64 version = 1;
+}
+
+// ---- Increment ----
+
+message IncrementRequest {
+    bytes table_id = 1;
+    bytes key      = 2;
+    int64 amount   = 3;
+}
+
+message IncrementResponse {
+    int64 new_value = 1;
+    int64 version   = 2;
+}
+
+// ---- CompareAndSwap ----
+
+message CASRequest {
+    bytes table_id      = 1;
+    bytes key           = 2;
+    bytes expected_value = 3;
+    bytes new_value     = 4;
+}
+
+message CASResponse {
+    bool  success       = 1;
+    int64 new_version   = 2;
+    bytes current_value = 3;
+}
+
+// ---- RangeScan ----
+
+message ScanRequest {
+    bytes table_id  = 1;
+    bytes start_key = 2;
+    bytes end_key   = 3;
+    int32 limit     = 4;
+}
+
+message ScanResponse {
+    repeated KVPair results = 1;
+}
+
+message KVPair {
+    bytes key     = 1;
+    bytes value   = 2;
+    int64 version = 3;
+}
