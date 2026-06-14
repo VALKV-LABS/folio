@@ -1,0 +1,29 @@
+﻿[package]
+name = "folio-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Shared protocol types, metadata store, transport utilities, and metrics for Folio"
+
+[dependencies]
+async-trait.workspace = true
+bincode.workspace = true
+bytes.workspace = true
+crc32fast.workspace = true
+hmac.workspace = true
+sha2.workspace = true
+etcd-client.workspace = true
+futures.workspace = true
+parking_lot.workspace = true
+prometheus.workspace = true
+prost.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tokio-stream.workspace = true
+tonic.workspace = true
+uuid.workspace = true
+
+[build-dependencies]
+tonic-build = "0.12"

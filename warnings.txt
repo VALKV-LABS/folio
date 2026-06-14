@@ -1,0 +1,9 @@
+warning: patch `sfv v0.9.4 (https://github.com/undef1nd/sfv?tag=v0.9.4#e6499d8c)` was not used in the crate graph
+help: Check that the patched package version and available features are compatible
+      with the dependency requirements. If the patch has a different version from
+      what is locked in the Cargo.lock file, run `cargo update` to use the new
+      version. This may also occur with an optional dependency that is not enabled.
+   Compiling folio-core v0.1.0 (/mnt/c/users/prabh/desktop/workspace/valkv-labs/folio/crates/folio-core)
+error: multiple input filenames provided (first two filenames are `crates/folio-core/build.rs` and `2`)
+
+error: could not compile `folio-core` (build script) due to 1 previous error

@@ -1,0 +1,16 @@
+﻿[package]
+name = "folio-ledger"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Folio client library — embed in your application to create, append to, and read distributed ledgers"
+
+[dependencies]
+folio-core.workspace = true
+async-trait.workspace = true
+futures.workspace = true
+moka.workspace = true
+parking_lot.workspace = true
+tokio.workspace = true
+tonic.workspace = true
+tracing.workspace = true
